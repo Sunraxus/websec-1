@@ -1,16 +1,18 @@
-var MAX_HISTORY_ITEMS = 20;
-var DECIMAL_PRECISION = 4;
-var ERROR_CLASS_NAME = 'input-error';
-var SHOW_ERROR_CLASS_NAME = 'show';
+'use strict';
 
-var historyList = [];
+const MAX_HISTORY_ITEMS = 20;
+const DECIMAL_PRECISION = 4;
+const ERROR_CLASS_NAME = 'input-error';
+const SHOW_ERROR_CLASS_NAME = 'show';
 
-var inputNum1;
-var inputNum2;
-var selectOperation;
-var buttonCalculate;
-var divResult;
-var divError;
+let historyList = [];
+
+let inputNum1;
+let inputNum2;
+let selectOperation;
+let buttonCalculate;
+let divResult;
+let divError;
 
 function initCalculator() {
     inputNum1 = document.getElementById('num1');
@@ -20,21 +22,22 @@ function initCalculator() {
     divResult = document.getElementById('result');
     divError = document.getElementById('error');
     
-    setupEventListeners();
+    if (!inputNum1 || !inputNum2 || !selectOperation || !buttonCalculate || !divResult || !divError) {
+        console.error('Ошибка: не все элементы найдены в DOM');
+        return;
+    }
     
+    setupEventListeners();
     console.log('Калькулятор готов к работе');
 }
 
 function setupEventListeners() {
     buttonCalculate.addEventListener('click', onCalculateClick);
-
     inputNum1.addEventListener('input', onInputChanged);
     inputNum2.addEventListener('input', onInputChanged);
-
     inputNum1.addEventListener('keypress', onKeyPress);
     inputNum2.addEventListener('keypress', onKeyPress);
 }
-
 
 function onCalculateClick() {
     calculateResult();
@@ -54,23 +57,9 @@ function onKeyPress(event) {
     }
 }
 
-
-function isNumericString(value) {
-    var cleaned = value.replace(',', '.').trim();
-    
-    if (cleaned === '') {
-        return false;
-    }
-    
-    var number = parseFloat(cleaned);
-    return !isNaN(number) && isFinite(number);
-}
-
-
 function cleanInput(raw) {
     return raw.replace(',', '.').trim();
 }
-
 
 function showError(message) {
     divError.innerHTML = message;
@@ -78,18 +67,15 @@ function showError(message) {
     divResult.innerHTML = '';
 }
 
-
 function hideErrorMessage() {
     divError.classList.remove(SHOW_ERROR_CLASS_NAME);
     divError.innerHTML = '';
 }
 
-
 function clearInputErrors() {
     inputNum1.classList.remove(ERROR_CLASS_NAME);
     inputNum2.classList.remove(ERROR_CLASS_NAME);
 }
-
 
 function addHistoryEntry(text) {
     historyList.push(text);
@@ -101,48 +87,52 @@ function addHistoryEntry(text) {
     drawHistory();
 }
 
-
 function drawHistory() {
     divResult.innerHTML = '';
     
-    for (var i = 0; i < historyList.length; i++) {
-        var item = historyList[i];
-        var line = document.createElement('div');
+    historyList.forEach((item, index) => {
+        const line = document.createElement('div');
+        
+        if (!line) {
+            console.error('Ошибка: не удалось создать элемент истории');
+            return;
+        }
         
         line.className = 'history-item';
         line.innerHTML = item;
         
-        if (i === historyList.length - 1) {
-            line.classList.add('latest');
-        } else {
-            line.classList.add('old');
-        }
+        const checkLength = index === historyList.length - 1;
+        line.classList.add(checkLength ? 'latest' : 'old');
         
         divResult.appendChild(line);
-    }
+    });
     
     divResult.scrollTop = divResult.scrollHeight;
 }
 
-
-function doMath(a, b, op) {
-    var result = null;
-    var error = null;
+function calculateOperation(a, b, op) {
+    let result = null;
+    let error = null;
     
-    if (op === '+') {
-        result = a + b;
-    } else if (op === '-') {
-        result = a - b;
-    } else if (op === '*') {
-        result = a * b;
-    } else if (op === '/') {
-        if (b === 0) {
-            error = 'Деление на ноль запрещено';
-        } else {
-            result = a / b;
-        }
-    } else {
-        error = 'Неизвестная операция';
+    switch (op) {
+        case '+':
+            result = a + b;
+            break;
+        case '-':
+            result = a - b;
+            break;
+        case '*':
+            result = a * b;
+            break;
+        case '/':
+            if (b === 0) {
+                error = 'Деление на ноль запрещено';
+            } else {
+                result = a / b;
+            }
+            break;
+        default:
+            error = 'Неизвестная операция';
     }
     
     return {
@@ -151,7 +141,6 @@ function doMath(a, b, op) {
     };
 }
 
-
 function formatNumber(value) {
     if (value === Math.floor(value)) {
         return value;
@@ -159,17 +148,16 @@ function formatNumber(value) {
     return parseFloat(value.toFixed(DECIMAL_PRECISION));
 }
 
-
 function calculateResult() {
     clearInputErrors();
     hideErrorMessage();
     
-    var raw1 = inputNum1.value;
-    var raw2 = inputNum2.value;
-    var operator = selectOperation.value;
+    const raw1 = inputNum1.value;
+    const raw2 = inputNum2.value;
+    const operator = selectOperation.value;
     
-    var val1 = cleanInput(raw1);
-    var val2 = cleanInput(raw2);
+    const val1 = cleanInput(raw1);
+    const val2 = cleanInput(raw2);
     
     if (val1 === '' || val2 === '') {
         if (val1 === '') {
@@ -182,20 +170,21 @@ function calculateResult() {
         return;
     }
     
-    if (!isNumericString(raw1) || !isNumericString(raw2)) {
-        if (!isNumericString(raw1)) {
+    const num1 = parseFloat(val1);
+    const num2 = parseFloat(val2);
+    
+    if (isNaN(num1) || isNaN(num2)) {
+        if (isNaN(num1)) {
             inputNum1.classList.add(ERROR_CLASS_NAME);
         }
-        if (!isNumericString(raw2)) {
+        if (isNaN(num2)) {
             inputNum2.classList.add(ERROR_CLASS_NAME);
         }
         showError('Введите корректные числа');
         return;
     }
     
-    var num1 = parseFloat(val1);
-    var num2 = parseFloat(val2);
-    var calcResult = doMath(num1, num2, operator);
+    const calcResult = calculateOperation(num1, num2, operator);
     
     if (calcResult.error !== null) {
         if (operator === '/' && num2 === 0) {
@@ -205,8 +194,8 @@ function calculateResult() {
         return;
     }
     
-    var formatted = formatNumber(calcResult.result);
-    var expression = num1 + ' ' + operator + ' ' + num2 + ' = ' + formatted;
+    const formatted = formatNumber(calcResult.result);
+    const expression = num1 + ' ' + operator + ' ' + num2 + ' = ' + formatted;
     
     addHistoryEntry(expression);
 }
